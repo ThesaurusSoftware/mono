@@ -81,13 +81,23 @@ namespace MonoTests.System.Net {
 
 		public static MyNetworkStream CreateNS (int port)
 		{
-			return CreateNS (port, 5000);
+			return CreateNS (IPAddress.Loopback, port, 5000);
 		}
 
 		public static MyNetworkStream CreateNS (int port, int timeout_ms)
 		{
+			return CreateNS (IPAddress.Loopback, port, timeout_ms);
+		}
+
+		public static MyNetworkStream CreateNS (IPAddress ip, int port)
+		{
+			return CreateNS (ip, port, 5000);
+		}
+
+		public static MyNetworkStream CreateNS (IPAddress ip, int port, int timeout_ms)
+		{
 			Socket sock = new Socket (AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-			sock.Connect (new IPEndPoint (IPAddress.Loopback, port));
+			sock.Connect (new IPEndPoint (ip, port));
 			sock.SendTimeout = timeout_ms;
 			sock.ReceiveTimeout = timeout_ms;
 			return new MyNetworkStream (sock);
@@ -136,6 +146,9 @@ namespace MonoTests.System.Net {
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test1 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -144,10 +157,13 @@ namespace MonoTests.System.Net {
 			Send (ns, "GET / HTTP/1.1\r\n\r\n"); // No host
 			string response = Receive (ns, 512);
 			ns.Close ();
-			StringAssert.StartsWith ("HTTP/1.1 400", response);
+			Assert.IsTrue(response.StartsWith ("HTTP/1.1 400"));
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test2 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -156,10 +172,13 @@ namespace MonoTests.System.Net {
 			Send (ns, "GET / HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"); // no prefix
 			string response = Receive (ns, 512);
 			ns.Close ();
-			StringAssert.StartsWith ("HTTP/1.1 400", response);
+			Assert.IsTrue(response.StartsWith ("HTTP/1.1 400"));
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test3 ()
 		{
 			StringBuilder bad = new StringBuilder ();
@@ -194,11 +213,14 @@ namespace MonoTests.System.Net {
 				string response = Receive (ns, 512);
 				ns.Close ();
 				listener.Close ();
-				StringAssert.StartsWith ("HTTP/1.1 400", response, String.Format ("Failed on {0}", (int) b));
+				Assert.IsTrue(response.StartsWith ("HTTP/1.1 400"), String.Format ("Failed on {0}", (int) b));
 			}
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test4 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -207,10 +229,13 @@ namespace MonoTests.System.Net {
 			Send (ns, "POST /test4/ HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"); // length required
 			string response = Receive (ns, 512);
 			ns.Close ();
-			StringAssert.StartsWith ("HTTP/1.1 411", response);
+			Assert.IsTrue(response.StartsWith ("HTTP/1.1 411"));
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test5 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -219,10 +244,13 @@ namespace MonoTests.System.Net {
 			Send (ns, "POST / HTTP/1.1\r\nHost: 127.0.0.1\r\nTransfer-Encoding: pepe\r\n\r\n"); // not implemented
 			string response = Receive (ns, 512);
 			ns.Close ();
-			StringAssert.StartsWith ("HTTP/1.1 501", response);
+			Assert.IsTrue(response.StartsWith ("HTTP/1.1 501"));
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test6 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -232,10 +260,13 @@ namespace MonoTests.System.Net {
 			Send (ns, "POST /test6/ HTTP/1.1\r\nHost: 127.0.0.1\r\nTransfer-Encoding: identity\r\n\r\n");
 			string response = Receive (ns, 512);
 			ns.Close ();
-			StringAssert.StartsWith ("HTTP/1.1 501", response);
+			Assert.IsTrue(response.StartsWith ("HTTP/1.1 501"));
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test7 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -247,11 +278,14 @@ namespace MonoTests.System.Net {
 			ctx.Response.Close ();
 			string response = Receive (ns, 1024);
 			ns.Close ();
-			StringAssert.StartsWith ("HTTP/1.1 200", response);
-			StringAssert.Contains ("Transfer-Encoding: chunked", response);
+			Assert.IsTrue(response.StartsWith ("HTTP/1.1 200"));
+			Assert.IsTrue(response.Contains ("Transfer-Encoding: chunked"));
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test8 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -264,11 +298,14 @@ namespace MonoTests.System.Net {
 			ctx.Response.Close ();
 			string response = Receive (ns, 512);
 			ns.Close ();
-			StringAssert.StartsWith ("HTTP/1.1 200", response);
+			Assert.IsTrue(response.StartsWith ("HTTP/1.1 200"));
 			Assert.IsTrue (-1 == response.IndexOf ("Transfer-Encoding: chunked"));
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test9 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -280,10 +317,13 @@ namespace MonoTests.System.Net {
 			string response = ReceiveWithTimeout (ns, 512, 1000, out timeout);
 			ns.Close ();
 			Assert.IsFalse (timeout);
-			StringAssert.StartsWith ("HTTP/1.1 411", response);
+			Assert.IsTrue(response.StartsWith ("HTTP/1.1 411"));
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test10 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -296,10 +336,13 @@ namespace MonoTests.System.Net {
 			string response = ReceiveWithTimeout (ns, 512, 1000, out timeout);
 			ns.Close ();
 			Assert.IsFalse (timeout);
-			StringAssert.StartsWith ("HTTP/1.1 411", response);
+			Assert.IsTrue(response.StartsWith ("HTTP/1.1 411"));
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test11 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -310,10 +353,13 @@ namespace MonoTests.System.Net {
 			ns.GetSocket ().Shutdown (SocketShutdown.Send);
 			string input = Receive (ns, 512);
 			ns.Close ();
-			StringAssert.StartsWith ("HTTP/1.1 400", input);
+			Assert.IsTrue(input.StartsWith ("HTTP/1.1 400"));
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test12 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -324,10 +370,13 @@ namespace MonoTests.System.Net {
 			ns.GetSocket ().Shutdown (SocketShutdown.Send);
 			string input = Receive (ns, 512);
 			ns.Close ();
-			StringAssert.StartsWith ("HTTP/1.1 400", input);
+			Assert.IsTrue(input.StartsWith ("HTTP/1.1 400"));
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test13 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -338,13 +387,16 @@ namespace MonoTests.System.Net {
 			ns.GetSocket ().Shutdown (SocketShutdown.Send);
 			string input = Receive (ns, 512);
 			ns.Close ();
-			StringAssert.StartsWith ("HTTP/1.1 400", input);
+			Assert.IsTrue(input.StartsWith ("HTTP/1.1 400"));
 		}
 
 		HttpListenerRequest test14_request;
 		ManualResetEvent test_evt;
 		bool test14_error;
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test14 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -381,6 +433,9 @@ namespace MonoTests.System.Net {
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test15 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -403,6 +458,9 @@ namespace MonoTests.System.Net {
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test16 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -427,6 +485,9 @@ namespace MonoTests.System.Net {
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test17 ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -438,11 +499,14 @@ namespace MonoTests.System.Net {
 			ctx.Response.Close ();
 			string response = Receive (ns, 1024);
 			ns.Close ();
-			StringAssert.StartsWith ("HTTP/1.1 200", response);
-			StringAssert.Contains ("Transfer-Encoding: chunked", response);
+			Assert.IsTrue(response.StartsWith ("HTTP/1.1 200"));
+			Assert.IsTrue(response.Contains ("Transfer-Encoding: chunked"));
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test_MultipleClosesOnOuputStreamAllowed ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -473,6 +537,9 @@ namespace MonoTests.System.Net {
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void ReceiveCookiesFromClient ()
 		{
 			sendCookiePort = NetworkHelpers.FindFreePort ();			
@@ -519,6 +586,9 @@ namespace MonoTests.System.Net {
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void SendCookiestoClient ()
 		{
 			receiveCookiePort = NetworkHelpers.FindFreePort ();
@@ -570,6 +640,9 @@ namespace MonoTests.System.Net {
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void MultiResponses ()
 		{
 			echoServerPort = NetworkHelpers.FindFreePort ();
@@ -637,6 +710,9 @@ namespace MonoTests.System.Net {
 	[TestFixture]
 	public class HttpListenerBugs {
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void TestNonChunkedAsync ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -691,6 +767,9 @@ namespace MonoTests.System.Net {
 		// a documented pattern to close the connection
 		// 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test_MultipleConnections ()
 		{
 			var port = NetworkHelpers.FindFreePort ();			
@@ -721,6 +800,9 @@ namespace MonoTests.System.Net {
 		// Test case for bug 341443, an pretty old bug, filed on November of 2007.
 		//
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test_HostInUri ()
 		{
 			var wait = new ManualResetEvent (false);
@@ -750,6 +832,9 @@ namespace MonoTests.System.Net {
 		}
 
 		[Test] // bug #513849
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void ClosePort ()
 		{
 			var port = NetworkHelpers.FindFreePort ();
@@ -773,6 +858,9 @@ namespace MonoTests.System.Net {
 		// does not also listen to another interface.
 		//
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void BindToSingleInterface ()
 		{
 			IPAddress [] machineAddress = null;
@@ -786,8 +874,14 @@ namespace MonoTests.System.Net {
 			
 			int port = NetworkHelpers.FindFreePort ();;
 			var h = new HttpListener ();
-			h.Prefixes.Add ("http://" + machineAddress [0] + ":" + port + "/");
-			h.Start ();
+			// Listen on the first IPV4 interface
+			foreach (IPAddress a in machineAddress) {
+				if (a.AddressFamily == AddressFamily.InterNetwork) {
+					h.Prefixes.Add ("http://" + a + ":" + port + "/");
+					h.Start ();
+					break;
+				}
+			}
 
 			try {
 				var c = new TcpClient ("localhost", port);
@@ -799,6 +893,9 @@ namespace MonoTests.System.Net {
 		}
 
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void BindToAllInterfaces ()
 		{
 			var h = new HttpListener ();
@@ -811,6 +908,9 @@ namespace MonoTests.System.Net {
 
 		// Test case for bug #31209
 		[Test]
+#if FEATURE_NO_BSD_SOCKETS
+		[ExpectedException (typeof (PlatformNotSupportedException))]
+#endif
 		public void Test_EmptyLineAtStart ()
 		{
 			var port = NetworkHelpers.FindFreePort ();

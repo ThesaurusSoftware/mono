@@ -1,10 +1,12 @@
-/*
- * runtime.c: Runtime functions
+/**
+ * \file
+ * Runtime functions
  *
  * Authors:
  *  Jonathan Pryor 
  *
  * Copyright 2010 Novell, Inc (http://www.novell.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <config.h>
@@ -17,7 +19,7 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/threadpool-ms.h>
+#include <mono/metadata/threadpool.h>
 #include <mono/metadata/marshal.h>
 #include <mono/utils/atomic.h>
 
@@ -26,11 +28,10 @@ static gboolean shutting_down = FALSE;
 
 /** 
  * mono_runtime_set_shutting_down:
+ * \deprecated This function can break the shutdown sequence.
  *
- * Invoked by System.Environment.Exit to flag that the runtime
+ * Invoked by \c System.Environment.Exit to flag that the runtime
  * is shutting down.
- *
- * Deprecated. This function can break the shutdown sequence.
  */
 void
 mono_runtime_set_shutting_down (void)
@@ -40,12 +41,8 @@ mono_runtime_set_shutting_down (void)
 
 /**
  * mono_runtime_is_shutting_down:
- *
- * Returns whether the runtime has been flagged for shutdown.
- *
- * This is consumed by the P:System.Environment.HasShutdownStarted
- * property.
- *
+ * This is consumed by the \c P:System.Environment.HasShutdownStarted property.
+ * \returns whether the runtime has been flagged for shutdown.
  */
 gboolean
 mono_runtime_is_shutting_down (void)
@@ -56,6 +53,7 @@ mono_runtime_is_shutting_down (void)
 static void
 fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 {
+	MonoError error;
 	MonoClassField *field;
 	gpointer pa [2];
 	MonoObject *delegate, *exc;
@@ -69,7 +67,8 @@ fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 
 	pa [0] = domain;
 	pa [1] = NULL;
-	mono_runtime_delegate_invoke (delegate, pa, &exc);
+	mono_runtime_delegate_try_invoke (delegate, pa, &exc, &error);
+	mono_error_cleanup (&error);
 }
 
 static void
@@ -106,9 +105,6 @@ mono_runtime_try_shutdown (void)
 
 	mono_runtime_set_shutting_down ();
 
-	/* This will kill the tp threads which cannot be suspended */
-	mono_threadpool_ms_cleanup ();
-
 	/*TODO move the follow to here:
 	mono_thread_suspend_all_other_threads (); OR  mono_thread_wait_all_other_threads
 
@@ -116,13 +112,6 @@ mono_runtime_try_shutdown (void)
 	*/
 
 	return TRUE;
-}
-
-
-gboolean
-mono_runtime_is_critical_method (MonoMethod *method)
-{
-	return FALSE;
 }
 
 /*
@@ -135,5 +124,25 @@ void
 mono_runtime_init_tls (void)
 {
 	mono_marshal_init_tls ();
-	mono_thread_init_tls ();
+}
+
+char*
+mono_runtime_get_aotid (void)
+{
+	int i;
+	guint8 aotid_sum = 0;
+	MonoDomain* domain = mono_domain_get ();
+
+	if (!domain->entry_assembly || !domain->entry_assembly->image)
+		return NULL;
+
+	guint8 (*aotid)[16] = &domain->entry_assembly->image->aotid;
+
+	for (i = 0; i < 16; ++i)
+		aotid_sum |= (*aotid)[i];
+
+	if (aotid_sum == 0)
+		return NULL;
+
+	return mono_guid_to_string ((guint8*) aotid);
 }

@@ -3,7 +3,12 @@ SUBDIRS =
 include ../../build/rules.make
 
 PROGRAM = cil-stringreplacer.exe
+NO_INSTALL = yes
 
-LOCAL_MCS_FLAGS =
+LIB_REFS = System Mono.Cecil
+
+ifdef MCS_MODE
+LIB_REFS += Mono.Cecil.Mdb
+endif
 
 include ../../build/executable.make

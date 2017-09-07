@@ -127,10 +127,9 @@ namespace Mono.CSharp
 			stmt.EmitStatement (ec);
 		}
 
-		public override void MarkReachable (Reachability rc)
+		public override Reachability MarkReachable (Reachability rc)
 		{
-			base.MarkReachable (rc);
-			stmt.MarkReachable (rc);
+			return stmt.MarkReachable (rc);
 		}
 
 		public override object Accept (StructuralVisitor visitor)
@@ -349,7 +348,11 @@ namespace Mono.CSharp
 
 			var errors_printer = new SessionReportPrinter ();
 			var old = bc.Report.SetPrinter (errors_printer);
-			ama = new Invocation (ama, args).Resolve (bc);
+
+			//
+			// The expression await t is classified the same way as the expression (t).GetAwaiter().GetResult(). 
+			//
+			ama = new Invocation (new ParenthesizedExpression (ama, Location.Null), args).Resolve (bc);
 			bc.Report.SetPrinter (old);
 
 			if (errors_printer.ErrorsCount > 0 || !MemberAccess.IsValidDotExpression (ama.Type)) {
@@ -510,11 +513,12 @@ namespace Mono.CSharp
 			ec.Emit (OpCodes.Ret);
 		}
 
-		public override void MarkReachable (Reachability rc)
+		public override Reachability MarkReachable (Reachability rc)
 		{
 			//
 			// Reachability has been done in AsyncInitializerStatement
 			//
+			return rc;
 		}
 	}
 
@@ -969,14 +973,17 @@ namespace Mono.CSharp
 		public StackFieldExpr (Field field)
 			: base (field, Location.Null)
 		{
+			AutomaticallyReuse = true;
 		}
+
+		public bool AutomaticallyReuse { get; set; }
 
 		public bool IsAvailableForReuse {
 			get {
 				var field = (Field) spec.MemberDefinition;
 				return field.IsAvailableForReuse;
 			}
-			set {
+			private set {
 				var field = (Field) spec.MemberDefinition;
 				field.IsAvailableForReuse = value;
 			}
@@ -986,7 +993,7 @@ namespace Mono.CSharp
 		{
 			base.AddressOf (ec, mode);
 
-			if (mode == AddressOp.Load) {
+			if (mode == AddressOp.Load && AutomaticallyReuse) {
 				IsAvailableForReuse = true;
 			}
 		}
@@ -995,7 +1002,8 @@ namespace Mono.CSharp
 		{
 			base.Emit (ec);
 
-			PrepareCleanup (ec);
+			if (AutomaticallyReuse)
+				PrepareCleanup (ec);
 		}
 
 		public void EmitLoad (EmitContext ec)

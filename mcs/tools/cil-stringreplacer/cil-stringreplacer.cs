@@ -100,31 +100,42 @@ public class Program
 
 	static void RewriteAssembly (string assemblyLocation, Dictionary<string, string> resourcesStrings, CmdOptions options)
 	{
-		var assembly = AssemblyDefinition.ReadAssembly (assemblyLocation);
-		foreach (var module in assembly.Modules) {
-			foreach (var type in module.GetTypes ()) {
-				foreach (var method in type.Methods) {
-					if (!method.HasBody)
-						continue;
-					
-					foreach (var instr in method.Body.Instructions) {
-						if (instr.OpCode != OpCodes.Ldstr)
+		var readerParameters = new ReaderParameters {
+			ReadSymbols = true,
+			ReadWrite = true,
+			SymbolReaderProvider = new DefaultSymbolReaderProvider (false)
+		};
+
+		using (var assembly = AssemblyDefinition.ReadAssembly (assemblyLocation, readerParameters)) {
+			foreach (var module in assembly.Modules) {
+				foreach (var type in module.GetTypes ()) {
+					foreach (var method in type.Methods) {
+						if (!method.HasBody)
 							continue;
 
-						string value;
-						if (resourcesStrings.TryGetValue ((string)instr.Operand, out value)) {
-							if (options.Verbose) {
-								Console.WriteLine ($"Replacing '{instr.Operand}' with '{value}'");
-							}
+						foreach (var instr in method.Body.Instructions) {
+							if (instr.OpCode != OpCodes.Ldstr)
+								continue;
 
-							instr.Operand = value;
+							string value;
+							if (resourcesStrings.TryGetValue ((string)instr.Operand, out value)) {
+								if (options.Verbose) {
+									Console.WriteLine ($"Replacing '{instr.Operand}' with '{value}'");
+								}
+
+								instr.Operand = value;
+							}
 						}
 					}
 				}
 			}
-		}
 
-		assembly.Write (assemblyLocation);
+			var writerParameters = new WriterParameters () {
+				WriteSymbols = assembly.MainModule.HasSymbols
+			};
+
+			assembly.Write (writerParameters);
+		}
 	}
 
 	static bool LoadGetResourceStrings (Dictionary<string, string> resourcesStrings, CmdOptions options)

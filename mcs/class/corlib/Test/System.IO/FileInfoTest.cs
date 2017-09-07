@@ -141,7 +141,6 @@ namespace MonoTests.System.IO
 
 #if !MOBILE
 		[Test]
-		[Category ("NotWorking")]
 		public void IsReadOnly ()
 		{
 			string path = TempFolder + DSC + "FIT.IsReadOnly.Test";
@@ -596,6 +595,8 @@ namespace MonoTests.System.IO
 			try {
 				FileInfo info = new FileInfo (path);
 				Assert.IsFalse (info.Exists, "#1");
+				info.Delete ();
+				Assert.IsFalse (info.Exists, "#1a");
 				info.Create ().Close ();
 				info = new FileInfo (path);
 				Assert.IsTrue (info.Exists, "#2");
@@ -656,7 +657,9 @@ namespace MonoTests.System.IO
 		{
 			string name = "FIT.MoveTo.SameName.Test";
 			string path1 = TempFolder + DSC + name;
-			string path2 = name;
+			string path2 = TempFolder + DSC + "same";
+			Directory.CreateDirectory (path2);
+			path2 += DSC + name;
 			DeleteFile (path1);
 			DeleteFile (path2);
 			
@@ -877,6 +880,29 @@ namespace MonoTests.System.IO
 				Assert.IsTrue (File.Exists (path), "#2");
 			} finally {
 				DeleteFile (path);
+			}
+		}
+
+		[Test] //Covers #38796
+		public void ToStringAfterMoveTo ()
+		{
+			string name1 = "FIT.ToStringAfterMoveTo.Test";
+			string name2 = "FIT.ToStringAfterMoveTo.Test.Alt";
+			string path1 = TempFolder + DSC + name1;
+			string path2 = TempFolder + DSC + name2;
+			DeleteFile (path1);
+			DeleteFile (path2);
+			
+			try {
+				File.Create (path1).Close ();
+				FileInfo info = new FileInfo (path1);
+				Assert.AreEqual (path1, info.ToString (), "#A");
+
+				info.MoveTo (path2);
+				Assert.AreEqual (path2, info.ToString (), "#B");
+			} finally {
+				DeleteFile (path1);
+				DeleteFile (path2);
 			}
 		}
 

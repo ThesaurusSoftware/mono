@@ -1,3 +1,7 @@
+/**
+ * \file
+ */
+
 #ifndef __MONO_MINI_ARCH_H__
 #define __MONO_MINI_ARCH_H__
 
@@ -15,8 +19,6 @@
 # else
 #error "s390 is no longer supported."
 # endif
-#elif defined(__ia64__)
-#include "mini-ia64.h"
 #elif defined(TARGET_ARM)
 #include "mini-arm.h"
 #elif defined(TARGET_ARM64)

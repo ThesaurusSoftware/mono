@@ -34,8 +34,11 @@ bin_SCRIPTS = \
 	$(MDOC_SUBCOMMANDS)	\
 	$(MDOC_COMPAT)		\
 	mono-test-install	\
-	peverify			\
-	mcs					\
+	peverify		\
+	mcs			\
+	csc					\
+	csi			\
+	mono-package-runtime	\
 	mono-heapviz		\
 	$(scripts_mono_configuration_crypto)
 
@@ -69,7 +72,6 @@ scripts_4_0 = \
 	macpack$(SCRIPT_SUFFIX)			\
 	mdoc$(SCRIPT_SUFFIX)                    \
 	mono-cil-strip$(SCRIPT_SUFFIX)		\
-	prj2make$(SCRIPT_SUFFIX)		\
 	soapsuds$(SCRIPT_SUFFIX)		\
 	caspol$(SCRIPT_SUFFIX)			\
 	cert-sync$(SCRIPT_SUFFIX)		\
@@ -84,6 +86,7 @@ scripts_4_0 = \
 	mod$(SCRIPT_SUFFIX)			\
 	monolinker$(SCRIPT_SUFFIX)		\
 	mono-api-info$(SCRIPT_SUFFIX) 		\
+	mono-api-html$(SCRIPT_SUFFIX) 		\
 	mono-shlib-cop$(SCRIPT_SUFFIX) 		\
 	mozroots$(SCRIPT_SUFFIX)		\
 	permview$(SCRIPT_SUFFIX)		\
@@ -152,14 +155,18 @@ EXTRA_DIST =			\
 	mono-find-requires.in	\
 	peverify.in			\
 	xbuild.in			\
-	update_submodules		\
+	update_submodules.sh	\
 	mcs.in				\
+	csc.in				\
 	dmcs.in				\
+	csi.in			\
+	mono-package-runtime	\
 	mono-test-install	\
 	mono-heapviz		\
 	$(MDOC_COMPAT)		\
-	get-cygwin-deps.sh	\
-	mono-configuration-crypto.in
+	mono-configuration-crypto.in	\
+	submodules/versions.mk	\
+	submodules/versions.py
 
 mono_interp = mono
 
@@ -197,8 +204,16 @@ mcs: mcs.in Makefile
 	$(REWRITE_COMMON) $(srcdir)/mcs.in > $@.tmp
 	mv -f $@.tmp $@
 
+csc: csc.in Makefile
+	$(REWRITE_COMMON) $(srcdir)/csc.in > $@.tmp
+	mv -f $@.tmp $@
+
 dmcs: dmcs.in Makefile
 	$(REWRITE_COMMON) $(srcdir)/dmcs.in > $@.tmp
+	mv -f $@.tmp $@
+
+csi: csi.in Makefile
+	$(REWRITE_COMMON) $(srcdir)/csi.in > $@.tmp
 	mv -f $@.tmp $@
 
 mono-service: mono-service.in Makefile
